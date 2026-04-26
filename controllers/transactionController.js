@@ -9,6 +9,7 @@ exports.addTransaction = async (req, res) => {
       category,
       type,
       date,
+      user: req.user.id,
     });
     res.status(201).json({
       data: transaction,
@@ -20,7 +21,7 @@ exports.addTransaction = async (req, res) => {
 
 exports.getTransactions = async (req, res) => {
   try {
-    const transactions = await Transaction.find({});
+    const transactions = await Transaction.find({ user: req.user.id });
     if (!transactions) {
       res.status(404).json("No Transactions Found");
     }
@@ -37,7 +38,11 @@ exports.getTransactionById = async (req, res) => {
     const transaction = await Transaction.findById(id);
 
     if (!transaction) {
-      res.status(404).json("Transacrion Not Found");
+      res.status(404).json("Transaction Not Found");
+    }
+
+    if (transaction.user.toString() !== req.user.id) {
+      return res.status(401).json({ success: false, error: "Not authorized" });
     }
 
     res.status(200).json(transaction);
@@ -58,6 +63,10 @@ exports.updateTransaction = async (req, res) => {
       },
     );
 
+    if (updateTransaction.user.toString() !== req.user.id) {
+      return res.status(401).json({ success: false, error: "Not authorized" });
+    }
+
     res.status(200).json(updateTransaction);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -74,6 +83,10 @@ exports.deleteTransactions = async (req, res) => {
         success: false,
         error: "No transaction found",
       });
+    }
+
+    if (transaction.user.toString() !== req.user.id) {
+      return res.status(401).json({ success: false, error: "Not authorized" });
     }
 
     res.status(200).json({
